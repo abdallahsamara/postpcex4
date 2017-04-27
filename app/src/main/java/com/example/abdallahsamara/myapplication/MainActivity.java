@@ -5,6 +5,7 @@ import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,6 +25,9 @@ import android.widget.Toast;
 
 import com.asamarah.project2.R;
 
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
@@ -31,15 +35,41 @@ public class MainActivity extends AppCompatActivity {
     private ListView mListView;
     private CustomListAdapter mCustomListAdapter;
 
+    private ArrayList<String> content;
+
+    private final DatabaseReference database = FirebaseDatabase.getInstance().getReference();
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        if (savedInstanceState == null) {
+            content = new ArrayList<>();
+            database.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    ArrayList<String> tmp = dataSnapshot.child("data").
+                            getValue(new GenericTypeIndicator<ArrayList<String>>(){});
+                    if (tmp != null) {
+                        content.addAll(tmp);
+                    }
+                    mCustomListAdapter.notifyDataSetChanged();
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                }
+            });
+        }
+        else {
+            content = (ArrayList<String>) savedInstanceState.getSerializable("aa");
+        }
+
         mEditText = (EditText) findViewById(R.id.editText);
         mListView = (ListView) findViewById(R.id.listView);
-
-        mCustomListAdapter = new CustomListAdapter(MainActivity.this);
 
         mListView.setAdapter(mCustomListAdapter);
 
@@ -59,10 +89,17 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(callIntent);
                     }
                 } else {
-                    showDialogWith(mCustomListAdapter.getItem(position), position);
+                    showDialogWith(s, position);
                 }
             }
         });
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putSerializable("aa", content);
     }
 
     @Override
@@ -98,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 new DatePickerDialog(MainActivity.this, datePickerListener,
-                        year, month,day).show();
+                        year, month, day).show();
             }
         });
     }
@@ -117,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
             String date = new StringBuilder().append(month + 1).append("-").append(day)
                     .append("-").append(year).append(" ").toString();
             mCustomListAdapter.addItem(textToAdd + " " + date);
+            database.child("data").setValue(textToAdd + " " + date);
         }
     };
 

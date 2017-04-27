@@ -16,9 +16,13 @@ public class CustomListAdapter extends BaseAdapter {
     private LayoutInflater mInflater;
     private ArrayList<String> mArray;
 
-    public CustomListAdapter(Context context) {
+    private DatabaseReference databaseReference;
+
+    public CustomListAdapter(Context context, DatabaseReference databaseReference) {
         mInflater = LayoutInflater.from(context);
         mArray = new ArrayList<>();
+
+        this.databaseReference = databaseReference;
     }
 
     @Override
